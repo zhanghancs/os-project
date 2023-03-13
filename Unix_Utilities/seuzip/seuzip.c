@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 int 
 main(int argc, char* argv[]) {
@@ -7,7 +8,7 @@ main(int argc, char* argv[]) {
 		fprintf(stdout, "seuzip: file1 [file2 ...]\n");
 		exit(1);
 	}
-	char character[1] = {'0'}, intBuf[4];
+	char character = '0', writeBuf[5];
 	int num = 0;
 	for (int i=1; i<argc; ++i) {
 		FILE* file = fopen(argv[i], "r");
@@ -19,20 +20,18 @@ main(int argc, char* argv[]) {
 		size_t length = 0, len = 0;
 		while ((len = getline(&buf, &length, file)) != -1) {
 			for (int j=0; j<len; ++j) {
-				if (character[0] == '0') {
-					character[0] = buf[j];
+				if (character == '0') {
+					character = buf[j];
 					num = 1;
 				}
-				else if (buf[j] != character[0]) {
+				else if (buf[j] != character) {
 					// 将int转换为字节流
-					intBuf[0] = num & 0xff;
-					intBuf[1] = (num >> 8) & 0xff;
-					intBuf[2] = (num >> 16) & 0xff;
-					intBuf[3] = (num >> 24) & 0xff;
+					memcpy(writeBuf, &num, 4);
+					writeBuf[4] = character;
 					// 写入int和char
-					fwrite(intBuf, sizeof(intBuf), 1, stdout);
-					fwrite(character, sizeof(character), 1, stdout);
-					character[0] = buf[j];
+					fwrite(writeBuf, sizeof(writeBuf), 1, stdout);
+					// fwrite(character, sizeof(character), 1, stdout);
+					character = buf[j];
 					num = 1;
 				} else {
 					++num;
@@ -41,11 +40,8 @@ main(int argc, char* argv[]) {
 		}
 		fclose(file);
 	}
-	intBuf[0] = num & 0xff;
-	intBuf[1] = (num >> 8) & 0xff;
-	intBuf[2] = (num >> 16) & 0xff;
-	intBuf[3] = (num >> 24) & 0xff;
-	fwrite(intBuf, sizeof(intBuf), 1, stdout);
-	fwrite(character, sizeof(character), 1, stdout);
+	memcpy(writeBuf, &num, 4);
+  writeBuf[4] = character;
+	fwrite(writeBuf, sizeof(writeBuf), 1, stdout);
 	exit(0);
 }
